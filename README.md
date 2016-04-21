@@ -41,8 +41,8 @@ CodeFileEncoder - DONE: "E:\Android\MyApplication_U"
 
 ### References
 
-* [cpdetector](http://cpdetector.sourceforge.net/index.shtml "cpdetector")
-* [zip4k](http://www.lingala.net/zip4j "zip4j")
+* [cpdetector_v1.0.10](http://cpdetector.sourceforge.net/index.shtml "cpdetector")
+* Modified version of [zip4j_v1.3.2](http://www.lingala.net/zip4j "zip4j")
 
 
 ### Download JAR
