@@ -1,5 +1,7 @@
 # GBK2UTF8
 
+[ ![Download](https://api.bintray.com/packages/bonnyfone/maven/org.bonnyfone.vectalign/images/download.svg) ](https://github.com/by-syk/GBK2UTF8/blob/master/GBK2UTF8_v1.0.1.jar)
+
 
 ### Description
 
@@ -30,11 +32,6 @@ CodeFileEncoder - C OK: ".\MyApplication\app\src\main\assets\fonts\comic.ttf" ->
 ...
 CodeFileEncoder - END
 ```
-
-
-### Download JAR
-
-* Get it [here](GBK2UTF8_v1.0.1.jar "GBK2UTF8").
 
 
 ### Contact author
