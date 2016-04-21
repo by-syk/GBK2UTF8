@@ -1,4 +1,0 @@
-Manifest-Version: 1.0
-Main-Class: com.by_syk.gbk2utf8.Main
-Class-Path: libs/cpdetector_1.0.10.jar libs/ext/antlr-2.7.4.jar libs/ext/chardet-1.0.jar libs/ext/jargs-1.0.jar
-Created-By: By_syk
