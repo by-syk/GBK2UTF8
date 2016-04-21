@@ -16,30 +16,43 @@ Run GBK2UTF8 from command line by passing the path of Java/Android projects that
 ```
 java -jar GBK2UTF8.jar E:\Android\MyApplication
 ```
+or
+```
+java -jar GBK2UTF8.jar E:\Android\MyApplication.zip
+```
+or
+```
+java -jar GBK2UTF8.jar E:\Android\MainActivity.java
+```
 
 **Example of output**
 ```
 === GBK2UTF8 for Java/Android Projects ===
-===          v1.0.1            @By_syk ===
-CodeFileEncoder - ROOT_DIR: E:\Android
-CodeFileEncoder - START
+===          v1.0.2            @By_syk ===
+CodeFileEncoder - START: "E:\Android\MyApplication"
 ...
-CodeFileEncoder - E OK: ".\MyApplication\app\src\main\java\com\by_syk\myapplication\MainActivity.java" -> ".\MyApplication_U\app\src\main\java\com\by_syk\myapplication\MainActivity.java"
+CodeFileEncoder - CONVERTED: "E:\Android\MyApplication\app\src\main\java\com\by_syk\myapplication\MainActivity.java" -> "E:\Android\MyApplication_U\app\src\main\java\com\by_syk\myapplication\MainActivity.java"
 ...
-CodeFileEncoder - C OK: ".\MyApplication\app\src\main\assets\fonts\comic.ttf" -> ".\MyApplication_U\app\src\main\assets\fonts\comic.ttf"
+CodeFileEncoder - COPIED: "E:\Android\MyApplication\app\src\main\assets\fonts\comic.ttf" -> "E:\Android\MyApplication_U\app\src\main\assets\fonts\comic.ttf"
 ...
-CodeFileEncoder - END
+CodeFileEncoder - DONE: "E:\Android\MyApplication_U"
 ```
 
 
 ### References
 
 * [cpdetector](http://cpdetector.sourceforge.net/index.shtml "cpdetector")
+* [zip4k](http://www.lingala.net/zip4j "zip4j")
 
 
 ### Download JAR
 
-* Get it [here](GBK2UTF8_v1.0.1.jar "GBK2UTF8").
+* Get it [here](GBK2UTF8_v1.0.2.jar "GBK2UTF8").
+
+
+### Changelog
+
+* View it [here](CHANGELOG.txt "Changelog").
 
 
 ### Contact author

@@ -1,0 +1,6 @@
+v1.0.2
+1. bugfix.
+2. Now GBK2UTF8 could read .zip file directly.
+
+v1.0.1
+First release.

@@ -8,15 +8,14 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         System.out.println("=== GBK2UTF8 for Java/Android Projects ===");
-        System.out.println("===          v1.0.1            @By_syk ===");
+        System.out.println("===          v1.0.2            @By_syk ===");
         
         String dir = "";
-        
         if (args != null && args.length > 0) {
             dir = args[0];
         } else {
-            System.out.println("Enter the directory or file (\"exit\" to exit):");
-        
+            System.out.println("Enter the path (of dir, zip or file):");
+            
             Scanner scanner = new Scanner(System.in);
             dir = scanner.nextLine();
             scanner.close();
@@ -24,10 +23,6 @@ public class Main {
         
         if (dir.equalsIgnoreCase("exit")) {
             return;
-        }
-        
-        if (dir.startsWith("./")) {
-            dir = "/storage/emulated/0" + dir.substring(1);
         }
         
         CodeFileEncoder codeFileEncoder = new CodeFileEncoder(dir);

@@ -5,41 +5,49 @@ import info.monitorenter.cpdetector.io.CodepageDetectorProxy;
 import info.monitorenter.cpdetector.io.JChardetFacade;
 import info.monitorenter.cpdetector.io.ParsingDetector;
 import info.monitorenter.cpdetector.io.UnicodeDetector;
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
+import net.lingala.zip4j.model.FileHeader;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.util.List;
 
 public class CodeFileEncoder {
-    private File dirFile = null;
-    private String rootDir = "";
+    private File sourceFile = null;
     
     private boolean enable_log = true;
     
-    public static final String SOURCE_ENCODING = "gbk";
-    public static final String TARGET_ENCODING = "utf-8";
+    public static final String DEF_SOURCE_ENCODING = "gbk";
+    public static final String DEF_TARGET_ENCODING = "utf-8";
     
-    private final String TAG = "CodeFileEncoder - ";
-    private final String LOG_OUTPUT = TAG + "%1$s %2$s: \"%3$s\" -> \"%4$s\"";
+    public static final String TAG = "CodeFileEncoder - ";
+    public static final String LOG_CONVERTED = TAG + "CONVERTED: \"%1$s\" -> \"%2$s\"";
+    public static final String LOG_COPIED = TAG + "COPIED: \"%1$s\" -> \"%2$s\"";
+    public static final String LOG_SKIPPED = TAG + "SKIPPED: %1$s";
+    public static final String LOG_CANCELLED = TAG + "CANCELLED: %1$s";
     
     public CodeFileEncoder() {}
     
-    public CodeFileEncoder(String dir) {
-        setDir(dir);
+    public CodeFileEncoder(String path) {
+        setSourcePath(path);
     }
     
-    public void setDir(String dir) {
-        if (dir == null) {
+    public void setSourcePath(String path) {
+        if (path == null) {
             return;
         }
         
-        dirFile = new File(dir);
+        if (path.startsWith("\"") && path.endsWith("\"")) {
+            path = path.substring(1, path.length() - 1);
+        }
+        
+        sourceFile = new File(path);
     }
     
     public void enableLog(boolean enable_log) {
@@ -47,13 +55,13 @@ public class CodeFileEncoder {
     }
     
     public boolean startConverting() {
-        if (dirFile == null || !dirFile.exists()) {
+        System.out.println(CodeFileEncoder.TAG + (sourceFile == null
+                ? "START" : String.format("START: \"%1$s\"", sourceFile.getPath())));
+        
+        if (sourceFile == null || !sourceFile.exists()) {
+            System.out.println(String.format(LOG_CANCELLED, "Invalid file."));
             return false;
         }
-        
-        rootDir = dirFile.getParent();
-        
-        System.out.println(TAG + "ROOT_DIR: " + rootDir);
         
         ConvertThread convertThread = new ConvertThread();
         convertThread.start();
@@ -93,13 +101,13 @@ public class CodeFileEncoder {
             fos = new FileOutputStream(targetFile);
             fcIn = fis.getChannel();
             fcOut = fos.getChannel();
-        
+            
             if (!isCodeFile(sourceFile)) {
                 fcIn.transferTo(0, fcIn.size(), fcOut);
                 is_convert_not_copy = false;
             } else {
                 String source_encoding = getFileEncoding(sourceFile);
-                if (TARGET_ENCODING.equals(source_encoding)) {
+                if (DEF_TARGET_ENCODING.equalsIgnoreCase(source_encoding)) {
                     fcIn.transferTo(0, fcIn.size(), fcOut);
                     is_convert_not_copy = false;
                 } else {
@@ -110,27 +118,25 @@ public class CodeFileEncoder {
                             break;
                         }
                         byteBuffer.flip();
-                    
-                        //fcOut.write(ByteBuffer.wrap(Charset.forName(SOURCE_ENCODING).decode(byteBuffer).toString()
-                        //        .getBytes(TARGET_ENCODING)));
-                        fcOut.write(ByteBuffer.wrap(Charset.forName(source_encoding).decode(byteBuffer).toString()
-                                  .getBytes(TARGET_ENCODING)));
+                        
+                        //fcOut.write(ByteBuffer.wrap(Charset.forName(source_encoding).decode(byteBuffer).toString()
+                        //          .getBytes(DEF_TARGET_ENCODING)));
+                        fcOut.write(ByteBuffer.wrap(Charset.forName(DEF_SOURCE_ENCODING).decode(byteBuffer).toString()
+                                .getBytes(DEF_TARGET_ENCODING)));
                     }
                 }
             }
             
             if (enable_log) {
-                System.out.println(String.format(LOG_OUTPUT, is_convert_not_copy ? "E" : "C", "OK",
-                        sourceFile.getPath().replace(rootDir, "."),
-                        targetFile.getPath().replace(rootDir, ".")));
+                System.out.println(String.format(is_convert_not_copy ? LOG_CONVERTED : LOG_COPIED,
+                        sourceFile.getPath(), targetFile.getPath()));
             }
         } catch (Exception e) {
             e.printStackTrace();
             
             if (enable_log) {
-                System.out.println(String.format(LOG_OUTPUT, is_convert_not_copy ? "E" : "C", "FAILED",
-                        sourceFile.getPath().replaceFirst(rootDir, "."),
-                        targetFile.getPath().replaceFirst(rootDir, ".")));
+                System.out.println(String.format(LOG_SKIPPED,
+                        sourceFile.getPath(), targetFile.getPath()));
             }
         } finally {
             if (fcIn != null) {
@@ -164,10 +170,10 @@ public class CodeFileEncoder {
         }
     }
     
-    private void convert(File sourceFile, File targetFile) {
+    /*private void convert(File sourceFile, File targetFile) {
         String source_encoding = getFileEncoding(sourceFile);
 
-        if (TARGET_ENCODING.equals(source_encoding)) {
+        if (DEF_TARGET_ENCODING.equalsIgnoreCase(source_encoding)) {
             copy(sourceFile, targetFile);
             return;
         }
@@ -178,26 +184,24 @@ public class CodeFileEncoder {
         try {
             fis = new FileInputStream(sourceFile);
             fos = new FileOutputStream(targetFile);
-            //InputStreamReader isr = new InputStreamReader(fis, SOURCE_ENCODING);
-            InputStreamReader isr = new InputStreamReader(fis, source_encoding);
+            //InputStreamReader isr = new InputStreamReader(fis, source_encoding);
+            InputStreamReader isr = new InputStreamReader(fis, DEF_SOURCE_ENCODING);
             bufferedReader = new BufferedReader(isr);
             String temp;
             while ((temp = bufferedReader.readLine()) != null) {
-                fos.write((temp + "\n").getBytes(TARGET_ENCODING));
+                fos.write((temp + "\n").getBytes(DEF_TARGET_ENCODING));
             }
             
             if (enable_log) {
-                System.out.println(String.format(LOG_OUTPUT, "E", "OK",
-                        sourceFile.getPath().replaceFirst(rootDir, "."),
-                        targetFile.getPath().replaceFirst(rootDir, ".")));
+                System.out.println(String.format(LOG_CONVERTED,
+                        sourceFile.getPath(), targetFile.getPath()));
             }
         } catch (Exception e) {
             e.printStackTrace();
             
             if (enable_log) {
-                System.out.println(String.format(LOG_OUTPUT, "E", "OK",
-                        sourceFile.getPath().replaceFirst(rootDir, "."),
-                        targetFile.getPath().replaceFirst(rootDir, ".")));
+                System.out.println(String.format(LOG_SKIPPED,
+                        sourceFile.getPath(), targetFile.getPath()));
             }
         } finally {
             if (bufferedReader != null) {
@@ -238,17 +242,15 @@ public class CodeFileEncoder {
             fcIn.transferTo(0, fcIn.size(), fcOut);
             
             if (enable_log) {
-                System.out.println(String.format(LOG_OUTPUT, "C", "OK",
-                        sourceFile.getPath().replaceFirst(rootDir, "."),
-                        targetFile.getPath().replaceFirst(rootDir, ".")));
+                System.out.println(String.format(LOG_COPIED,
+                        sourceFile.getPath(), targetFile.getPath()));
             }
         } catch (Exception e) {
             e.printStackTrace();
             
             if (enable_log) {
-                System.out.println(String.format(LOG_OUTPUT, "C", "OK",
-                        sourceFile.getPath().replaceFirst(rootDir, "."),
-                        targetFile.getPath().replaceFirst(rootDir, ".")));
+                System.out.println(String.format(LOG_SKIPPED,
+                        sourceFile.getPath(), targetFile.getPath()));
             }
         } finally {
             if (fcIn != null) {
@@ -280,7 +282,7 @@ public class CodeFileEncoder {
                 }
             }
         }
-    }
+    }*/
     
     private boolean isCodeFile(File sourceFile) {
         if (sourceFile == null) {
@@ -293,7 +295,7 @@ public class CodeFileEncoder {
                 || name.endsWith(".gradle") || name.endsWith(".txt");
     }
     
-    private File getFile4Copy(File sourceFile) {
+    private File getFile4Copy(File sourceFile, File targetDir) {
         if (sourceFile == null) {
             return null;
         }
@@ -311,11 +313,19 @@ public class CodeFileEncoder {
             }
         }
         
+        if (targetDir != null && targetDir.isDirectory()) {
+            return new File(targetDir, fileName);
+        }
         return new File(sourceFile.getParent(), fileName);
+    }
+    
+    private File getFile4Copy(File sourceFile) {
+        return getFile4Copy(sourceFile, null);
     }
     
     /**
      * 参考：http://m.blog.csdn.net/article/details?id=8250592
+     * 由于基于统计，未见内容很少时不太准
      *
      * 利用第三方开源包cpdetector获取文件编码格式
      * 
@@ -365,21 +375,95 @@ public class CodeFileEncoder {
         }
         return null;
     }
+    
+    private File unzip(File sourceFile, File targetDir) {
+        try {
+            ZipFile zipFile = new ZipFile(sourceFile);
+            
+            if (!zipFile.isValidZipFile()) {
+                return null;
+            }
+            
+            if (zipFile.isEncrypted()) {
+                return null;
+            }
+            
+            if (targetDir == null || !targetDir.isDirectory()) {
+                targetDir = new File(new File(System.getProperty("java.io.tmpdir")),
+                        sourceFile.getName().replace(".zip", ""));
+                
+                if (targetDir.exists()) {
+                    deleteFile(targetDir);
+                }
+            }
+            
+            boolean is_files_name_utf8_encoded = true;
+            List list = zipFile.getFileHeaders();
+            FileHeader fileHeader;
+            for (int i = 0, len = list.size(); i < len; ++i) {
+                fileHeader = (FileHeader) list.get(i);
+                is_files_name_utf8_encoded &= fileHeader.isFileNameUTF8Encoded();
+            }
+            
+            if (!is_files_name_utf8_encoded) {
+                zipFile = new ZipFile(sourceFile);
+                zipFile.setFileNameCharset(DEF_SOURCE_ENCODING);
+            }
+            
+            zipFile.extractAll(targetDir.getPath());
+            
+            return targetDir;
+        } catch (ZipException e) {
+            e.printStackTrace();
+        }
+        
+        return null;
+    }
+
+    private void deleteFile(File file) {
+        if (file == null) {
+            return;
+        }
+        
+        if (file.isDirectory()) {
+            for (File subFile : file.listFiles()) {
+                deleteFile(subFile);
+            }
+        }
+        
+        file.delete();
+    }
 
     class ConvertThread extends Thread {
         @Override
         public void run() {
-            System.out.println(TAG + "START");
-            
-            File file = getFile4Copy(dirFile);
-            if (file.exists()) {
-                System.out.println(String.format(TAG + "CANCEL: \"%1$s\" is existed.",
-                        file.getPath().replaceFirst(rootDir, ".")));
+            File oldFile;
+            File newFile;
+            if (sourceFile.isFile() && sourceFile.getName().endsWith(".zip")) {
+                System.out.println(TAG + "UNZIPPING...");
+                oldFile = unzip(sourceFile, null);
+                if (oldFile == null) {
+                    System.out.println(String.format(LOG_CANCELLED, "failed to unzip."));
+                    return;
+                }
+                System.out.println(TAG + "UNZIPPED: " + oldFile.getPath());
+                
+                newFile = getFile4Copy(oldFile, sourceFile.getParentFile());
             } else {
-                ergodic(dirFile, file);
+                oldFile = sourceFile;
+                
+                newFile = getFile4Copy(oldFile);
             }
             
-            System.out.println(TAG + "END");
+            if (newFile.exists()) {
+                System.out.println(String.format(LOG_CANCELLED + "\"%1$s\" is existed.",
+                        newFile.getPath()));
+                return;
+            }
+            
+            ergodic(oldFile, newFile);
+            
+            System.out.println(CodeFileEncoder.TAG + String.format("DONE: \"%1$s\"", newFile.getPath()));
         }
     }
 }
