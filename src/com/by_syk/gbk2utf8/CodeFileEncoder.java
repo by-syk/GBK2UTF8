@@ -11,12 +11,16 @@ import net.lingala.zip4j.model.FileHeader;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.List;
+
+import de.innosystec.unrar.Archive;
+import de.innosystec.unrar.exception.RarException;
 
 public class CodeFileEncoder {
     private File sourceFile = null;
@@ -102,7 +106,7 @@ public class CodeFileEncoder {
             fcIn = fis.getChannel();
             fcOut = fos.getChannel();
             
-            if (!isCodeFile(sourceFile)) {
+            if (!Util.isCodeFile(sourceFile)) {
                 fcIn.transferTo(0, fcIn.size(), fcOut);
                 is_convert_not_copy = false;
             } else {
@@ -284,17 +288,6 @@ public class CodeFileEncoder {
         }
     }*/
     
-    private boolean isCodeFile(File sourceFile) {
-        if (sourceFile == null) {
-            return false;
-        }
-        
-        String name = sourceFile.getName().toLowerCase();
-        
-        return name.endsWith(".java") || name.endsWith(".xml")
-                || name.endsWith(".gradle") || name.endsWith(".txt");
-    }
-    
     private File getFile4Copy(File sourceFile, File targetDir) {
         if (sourceFile == null) {
             return null;
@@ -377,6 +370,19 @@ public class CodeFileEncoder {
     }
     
     private File unzip(File sourceFile, File targetDir) {
+        if (sourceFile == null) {
+            return null;
+        }
+        
+        if (targetDir == null || !targetDir.isDirectory()) {
+            targetDir = new File(new File(System.getProperty("java.io.tmpdir")),
+                    sourceFile.getName().replace(".zip", ""));
+            
+            if (targetDir.exists()) {
+                Util.deleteFile(targetDir);
+            }
+        }
+        
         try {
             ZipFile zipFile = new ZipFile(sourceFile);
             
@@ -386,15 +392,6 @@ public class CodeFileEncoder {
             
             if (zipFile.isEncrypted()) {
                 return null;
-            }
-            
-            if (targetDir == null || !targetDir.isDirectory()) {
-                targetDir = new File(new File(System.getProperty("java.io.tmpdir")),
-                        sourceFile.getName().replace(".zip", ""));
-                
-                if (targetDir.exists()) {
-                    deleteFile(targetDir);
-                }
             }
             
             boolean is_files_name_utf8_encoded = true;
@@ -419,40 +416,107 @@ public class CodeFileEncoder {
         
         return null;
     }
-
-    private void deleteFile(File file) {
-        if (file == null) {
-            return;
+    
+    private File unrar(File sourceFile, File targetDir) {
+        if (sourceFile == null) {
+            return null;
         }
         
-        if (file.isDirectory()) {
-            for (File subFile : file.listFiles()) {
-                deleteFile(subFile);
+        if (targetDir == null || !targetDir.isDirectory()) {
+            targetDir = new File(new File(System.getProperty("java.io.tmpdir")),
+                    sourceFile.getName().replace(".rar", ""));
+            
+            if (targetDir.exists()) {
+                Util.deleteFile(targetDir);
             }
         }
         
-        file.delete();
+        Archive archive = null;
+        // net.lingala.zip4j.model.FileHeader
+        de.innosystec.unrar.rarfile.FileHeader fileHeader = null;
+        
+        File tempFile;
+        FileOutputStream fos = null;
+        
+        try {
+            archive = new Archive(sourceFile);
+            
+            if (archive.isEncrypted()) {
+                return null;
+            }
+            
+            while ((fileHeader = archive.nextFileHeader()) != null) {
+                if (fileHeader.isDirectory()) {
+                    continue;
+                }
+                
+                tempFile = new File(targetDir, fileHeader.getFileNameString().trim());
+                tempFile.getParentFile().mkdirs();
+                
+                fos = new FileOutputStream(tempFile);
+                archive.extractFile(fileHeader, fos);
+                fos.close();
+                fos = null;
+            }
+            
+            return targetDir;
+        } catch (RarException e) {
+            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            
+            if (archive != null) {
+                try {
+                    archive.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+        return null;
     }
 
     class ConvertThread extends Thread {
         @Override
         public void run() {
-            File oldFile;
-            File newFile;
-            if (sourceFile.isFile() && sourceFile.getName().endsWith(".zip")) {
-                System.out.println(TAG + "UNZIPPING...");
-                oldFile = unzip(sourceFile, null);
-                if (oldFile == null) {
-                    System.out.println(String.format(LOG_CANCELLED, "failed to unzip."));
-                    return;
+            File oldFile = sourceFile;
+            File newFile = getFile4Copy(oldFile);
+            
+            if (sourceFile.isFile()) {
+                if (sourceFile.getName().endsWith(".zip")) {
+                    System.out.println(TAG + "UNZIPPING...");
+                    oldFile = unzip(sourceFile, null);
+                    if (oldFile == null) {
+                        System.out.println(String.format(LOG_CANCELLED, "failed to unzip."));
+                        return;
+                    }
+                    System.out.println(TAG + String.format("UNZIPPED: \"%1$s\"", oldFile.getPath()));
+                    
+                    newFile = getFile4Copy(oldFile, sourceFile.getParentFile());
+                } else if (sourceFile.getName().endsWith(".rar")) {
+                    System.out.println(TAG + "UNRARING...");
+                    oldFile = unrar(sourceFile, null);
+                    if (oldFile == null) {
+                        System.out.println(String.format(LOG_CANCELLED, "failed to unrar."));
+                        return;
+                    }
+                    System.out.println(TAG + String.format("UNRARED: \"%1$s\"", oldFile.getPath()));
+
+                    newFile = getFile4Copy(oldFile, sourceFile.getParentFile());
                 }
-                System.out.println(TAG + "UNZIPPED: " + oldFile.getPath());
-                
-                newFile = getFile4Copy(oldFile, sourceFile.getParentFile());
-            } else {
-                oldFile = sourceFile;
-                
-                newFile = getFile4Copy(oldFile);
             }
             
             if (newFile.exists()) {

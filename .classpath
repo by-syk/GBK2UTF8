@@ -7,5 +7,7 @@
 	<classpathentry kind="lib" path="libs/ext/chardet-1.0.jar"/>
 	<classpathentry kind="lib" path="libs/ext/jargs-1.0.jar"/>
 	<classpathentry kind="lib" path="libs/zip4j_1.3.2_(By_syk_1.0.2).jar"/>
+	<classpathentry kind="lib" path="libs/ext/commons-logging-1.0.4.jar"/>
+	<classpathentry kind="lib" path="libs/java-unrar-0.5.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         System.out.println("=== GBK2UTF8 for Java/Android Projects ===");
-        System.out.println("===          v1.0.2            @By_syk ===");
+        System.out.println("===          v1.0.3            @By_syk ===");
         
         String dir = "";
         if (args != null && args.length > 0) {

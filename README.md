@@ -22,13 +22,17 @@ java -jar GBK2UTF8.jar E:\Android\MyApplication.zip
 ```
 or
 ```
+java -jar GBK2UTF8.jar E:\Android\MyApplication.rar
+```
+or
+```
 java -jar GBK2UTF8.jar E:\Android\MainActivity.java
 ```
 
 **Example of output**
 ```
 === GBK2UTF8 for Java/Android Projects ===
-===          v1.0.2            @By_syk ===
+===          v1.0.3            @By_syk ===
 CodeFileEncoder - START: "E:\Android\MyApplication"
 ...
 CodeFileEncoder - CONVERTED: "E:\Android\MyApplication\app\src\main\java\com\by_syk\myapplication\MainActivity.java" -> "E:\Android\MyApplication_U\app\src\main\java\com\by_syk\myapplication\MainActivity.java"
@@ -43,11 +47,12 @@ CodeFileEncoder - DONE: "E:\Android\MyApplication_U"
 
 * [cpdetector_v1.0.10](http://cpdetector.sourceforge.net/index.shtml "cpdetector")
 * Modified version of [zip4j_v1.3.2](http://www.lingala.net/zip4j "zip4j")
+* [java-unrar_v0.5](https://sourceforge.net/projects/java-unrar "java-unrar")
 
 
 ### Download JAR
 
-* Get it [here](GBK2UTF8_v1.0.2.jar "GBK2UTF8").
+* Get it [here](GBK2UTF8_v1.0.3.jar "GBK2UTF8").
 
 
 ### Changelog
