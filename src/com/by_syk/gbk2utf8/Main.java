@@ -21,10 +21,6 @@ public class Main {
             scanner.close();
         }
         
-        if (dir.equalsIgnoreCase("exit")) {
-            return;
-        }
-        
         CodeFileEncoder codeFileEncoder = new CodeFileEncoder(dir);
         //codeFileEncoder.enableLog(true);
         codeFileEncoder.startConverting();

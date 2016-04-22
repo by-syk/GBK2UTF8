@@ -432,9 +432,10 @@ public class CodeFileEncoder {
         }
         
         Archive archive = null;
-        // net.lingala.zip4j.model.FileHeader
+        // 避免冲突：net.lingala.zip4j.model.FileHeader
         de.innosystec.unrar.rarfile.FileHeader fileHeader = null;
         
+        String tempStr;
         File tempFile;
         FileOutputStream fos = null;
         
@@ -450,7 +451,15 @@ public class CodeFileEncoder {
                     continue;
                 }
                 
-                tempFile = new File(targetDir, fileHeader.getFileNameString().trim());
+                // 解决中文文件名乱码
+                if (fileHeader.isUnicode()) {
+                    tempStr = fileHeader.getFileNameW().trim();
+                } else {
+                    tempStr = fileHeader.getFileNameString().trim(); 
+                }
+                tempStr = tempStr.replaceAll("\\\\","/"); // 替换为Java的分隔符
+                
+                tempFile = new File(targetDir, tempStr);
                 tempFile.getParentFile().mkdirs();
                 
                 fos = new FileOutputStream(tempFile);
@@ -520,8 +529,8 @@ public class CodeFileEncoder {
             }
             
             if (newFile.exists()) {
-                System.out.println(String.format(LOG_CANCELLED + "\"%1$s\" is existed.",
-                        newFile.getPath()));
+                System.out.println(String.format(LOG_CANCELLED,
+                        String.format("\"%1$s\" is existed.", newFile.getPath())));
                 return;
             }
             
